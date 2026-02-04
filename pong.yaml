@@ -11,7 +11,13 @@ config:
   ball_start_speed_y: 3.0
 
 tables:
-  paddle:
+  paddle1:
+    columns:
+      x: float
+      y: float
+      width: float
+      height: float
+  paddle2:
     columns:
       x: float
       y: float
@@ -30,10 +36,10 @@ tables:
       p2: int
 
 functions:
-  InitPaddle:
+  InitPaddles:
     inputs: []
-    outputs: [paddle]
-    body: "sets initial position and size of paddle"
+    outputs: [paddle1, paddle2]
+    body: "sets initial positions for both paddles"
   InitBall:
     inputs: []
     outputs: [ball]
@@ -42,34 +48,36 @@ functions:
     inputs: []
     outputs: [score]
     body: "sets initial scores to 0"
-  MovePaddle:
-    inputs: [paddle]
-    outputs: [paddle]
-    body: "updates paddle position based on input or AI logic"
+  MovePaddle1:
+    inputs: [paddle1]
+    outputs: [paddle1]
+    body: "updates player paddle based on input"
+  MovePaddle2:
+    inputs: [paddle2, ball]
+    outputs: [paddle2]
+    body: "updates AI paddle to follow the ball"
   MoveBall:
-    inputs: [ball, paddle]
+    inputs: [ball, paddle1, paddle2]
     outputs: [ball]
-    body: "applies velocity to ball and handles wall/paddle collisions"
+    body: "applies velocity and handles collisions with walls and both paddles"
   CheckScore:
     inputs: [ball, score]
     outputs: [score]
-    body: "increments score if ball passes left/right boundaries"
   GameLost:
     inputs: [score]
     outputs: []
-    body: "terminates round if player 1 loses"
   GameWon:
     inputs: [score]
     outputs: []
-    body: "celebrates victory if player 1 wins"
 
 procedures:
   Setup:
-    - InitPaddle
+    - InitPaddles
     - InitBall
     - InitScore
   Loop:
-    - MovePaddle
+    - MovePaddle1
+    - MovePaddle2
     - MoveBall
     - CheckScore
     - GameLost
