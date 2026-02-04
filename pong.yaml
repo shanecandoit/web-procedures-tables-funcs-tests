@@ -1,0 +1,76 @@
+project_name: Pong
+
+config:
+  screen_width: 800.0
+  screen_height: 600.0
+  paddle_width: 15.0
+  paddle_height: 80.0
+  paddle_speed: 5.0
+  ball_radius: 8.0
+  ball_start_speed_x: 4.0
+  ball_start_speed_y: 3.0
+
+tables:
+  paddle:
+    columns:
+      x: float
+      y: float
+      width: float
+      height: float
+  ball:
+    columns:
+      x: float
+      y: float
+      radius: float
+      speedX: float
+      speedY: float
+  score:
+    columns:
+      p1: int
+      p2: int
+
+functions:
+  InitPaddle:
+    inputs: []
+    outputs: [paddle]
+    body: "sets initial position and size of paddle"
+  InitBall:
+    inputs: []
+    outputs: [ball]
+    body: "sets initial position, radius, and speed of ball"
+  InitScore:
+    inputs: []
+    outputs: [score]
+    body: "sets initial scores to 0"
+  MovePaddle:
+    inputs: [paddle]
+    outputs: [paddle]
+    body: "updates paddle position based on input or AI logic"
+  MoveBall:
+    inputs: [ball, paddle]
+    outputs: [ball]
+    body: "applies velocity to ball and handles wall/paddle collisions"
+  CheckScore:
+    inputs: [ball, score]
+    outputs: [score]
+    body: "increments score if ball passes left/right boundaries"
+  GameLost:
+    inputs: [score]
+    outputs: []
+    body: "terminates round if player 1 loses"
+  GameWon:
+    inputs: [score]
+    outputs: []
+    body: "celebrates victory if player 1 wins"
+
+procedures:
+  Setup:
+    - InitPaddle
+    - InitBall
+    - InitScore
+  Loop:
+    - MovePaddle
+    - MoveBall
+    - CheckScore
+    - GameLost
+    - GameWon
