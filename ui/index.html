@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Project & Logic View</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/js-yaml/4.1.0/js-yaml.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Fira+Code:wght@400&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <nav>
+        <div class="nav-brand">LogicCanvas</div>
+        <select id="project-select" class="project-selector" onchange="changeProject(this.value)">
+            <option value="pong">Pong</option>
+            <option value="snake">Snake</option>
+            <option value="breakout">Breakout</option>
+            <option value="quadtris">Quadtris</option>
+        </select>
+        <div class="nav-item active" onclick="showView('project')">Project View</div>
+        <div class="nav-item" onclick="showView('canvas')">Canvas View</div>
+        <button class="btn-run" onclick="runCurrentProject()">
+            <span>▶</span> Run Project
+        </button>
+    </nav>
+
+    <div id="project-view" class="content-view active">
+        <div class="preview-card">
+            <h2 id="md-title">📄 pong.md</h2>
+            <div class="code-preview" id="md-preview"></div>
+        </div>
+        <div class="preview-card">
+            <h2 id="yaml-title">⚙️ pong.yaml</h2>
+            <div class="code-preview" id="yaml-preview"></div>
+        </div>
+    </div>
+
+    <div id="canvas-view" class="content-view">
+        <div id="canvas-container">
+            <div id="canvas-inner">
+                <svg id="connections">
+                    <defs>
+                        <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="10" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="rgba(148, 163, 184, 0.8)" />
+                        </marker>
+                    </defs>
+                </svg>
+            </div>
+            <div class="zoom-controls">
+                <button class="zoom-btn" onclick="zoom(0.1)">+</button>
+                <button class="zoom-btn" onclick="resetZoom()">1:1</button>
+                <button class="zoom-btn" onclick="zoom(-0.1)">-</button>
+                <div id="zoom-level"
+                    style="font-size: 0.8rem; display: flex; align-items: center; margin-left: 0.5rem;">100%</div>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-view" class="content-view">
+        <div id="game-loading" class="loading-overlay" style="display: none;">
+            <div class="spinner"></div>
+            <div id="loading-text">Generating & Loading Project...</div>
+        </div>
+        <iframe id="game-frame"></iframe>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

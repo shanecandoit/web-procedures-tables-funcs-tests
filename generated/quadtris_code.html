@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quadtris</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { margin: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background: #0f172a; overflow: hidden; color: #f8fafc; font-family: 'Inter', system-ui, sans-serif; }
+        canvas { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 4px solid #334155; border-radius: 12px; }
+        #ui { margin-bottom: 2rem; text-align: center; }
+        h1 { margin: 0; font-size: 3rem; font-weight: 800; letter-spacing: -0.025em; }
+        p { color: #94a3b8; margin-top: 0.5rem; }
+        .game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.9); padding: 2rem; border-radius: 12px; border: 2px solid #ef4444; text-align: center; display: none; z-index: 100; }
+        .game-over h2 { color: #ef4444; margin: 0 0 1rem; }
+        .game-over button { background: #10b981; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <h1>Quadtris</h1>
+        <p>Generic Project View</p>
+    </div>
+    <script>
+
+    // --- Configuration ---
+    const SCREEN_WIDTH = 400.0;
+    const SCREEN_HEIGHT = 800.0;
+    const GRID_WIDTH = 10;
+    const GRID_HEIGHT = 20;
+    const CELL_SIZE = 30.0;
+    const INITIAL_DROP_SPEED = 1.0;
+    const LOCK_DELAY = 0.5;
+    const INITIAL_LIVES = 3;
+    const LINES_PER_LEVEL = 10;
+    const PREVIEW_COUNT = 3;
+
+    // --- Global State ---
+    let state = {
+        active_piece_curr: {},
+        active_piece_next: {},
+        grid_curr: {},
+        grid_next: {},
+        next_pieces_curr: {},
+        next_pieces_next: {},
+        score_curr: {},
+        score_next: {},
+        game_state_curr: {},
+        game_state_next: {},
+    };
+
+    // --- Pure Logic Functions ---
+// Generic Logic Placeholder
+    // --- Generated Wrappers ---
+    function Wrapper_InitActivePiece() {
+        state.active_piece_next = Logic_InitActivePiece();
+        state.active_piece_curr = state.active_piece_next;
+    }
+
+    function Wrapper_InitGrid() {
+        state.grid_next = Logic_InitGrid();
+        state.grid_curr = state.grid_next;
+    }
+
+    function Wrapper_InitNextPieces() {
+        state.next_pieces_next = Logic_InitNextPieces();
+        state.next_pieces_curr = state.next_pieces_next;
+    }
+
+    function Wrapper_InitScore() {
+        state.score_next = Logic_InitScore();
+        state.score_curr = state.score_next;
+    }
+
+    function Wrapper_InitGameState() {
+        state.game_state_next = Logic_InitGameState();
+        state.game_state_curr = state.game_state_next;
+    }
+
+    function Wrapper_UpdateGameState() {
+        state.game_state_next = Logic_UpdateGameState(state.game_state_curr);
+    }
+
+    function Wrapper_ProcessInput() {
+        const results = Logic_ProcessInput(state.active_piece_curr, state.game_state_curr);
+        state.active_piece_next = results.active_piece;
+        state.game_state_next = results.game_state;
+    }
+
+    function Wrapper_UpdateDropTimer() {
+        state.game_state_next = Logic_UpdateDropTimer(state.game_state_curr);
+    }
+
+    function Wrapper_MoveActivePiece() {
+        const results = Logic_MoveActivePiece(state.active_piece_curr, state.game_state_curr);
+        state.active_piece_next = results.active_piece;
+        state.game_state_next = results.game_state;
+    }
+
+    function Wrapper_RotateActivePiece() {
+        state.active_piece_next = Logic_RotateActivePiece(state.active_piece_curr);
+    }
+
+    function Wrapper_CheckCollision() {
+        state.active_piece_next = Logic_CheckCollision(state.active_piece_curr, state.grid_curr);
+    }
+
+    function Wrapper_LockPiece() {
+        const results = Logic_LockPiece(state.active_piece_curr, state.grid_curr, state.game_state_curr);
+        state.grid_next = results.grid;
+        state.game_state_next = results.game_state;
+        state.active_piece_next = results.active_piece;
+    }
+
+    function Wrapper_ClearLines() {
+        const results = Logic_ClearLines(state.grid_curr, state.score_curr);
+        state.grid_next = results.grid;
+        state.score_next = results.score;
+    }
+
+    function Wrapper_SpawnNewPiece() {
+        const results = Logic_SpawnNewPiece(state.active_piece_curr, state.next_pieces_curr, state.game_state_curr);
+        state.active_piece_next = results.active_piece;
+        state.next_pieces_next = results.next_pieces;
+        state.game_state_next = results.game_state;
+    }
+
+    function Wrapper_UpdateScore() {
+        const results = Logic_UpdateScore(state.score_curr, state.game_state_curr);
+        state.score_next = results.score;
+        state.game_state_next = results.game_state;
+    }
+
+    function Wrapper_CheckGameOver() {
+        state.game_state_next = Logic_CheckGameOver(state.grid_curr, state.active_piece_curr, state.game_state_curr);
+    }
+
+    // --- Procedures ---
+    function SwapBuffers() {
+        state.active_piece_curr = { ...state.active_piece_next, pos_x: state.active_piece_next.pos_x ? [...state.active_piece_next.pos_x]:undefined, pos_y: state.active_piece_next.pos_y ? [...state.active_piece_next.pos_y]:undefined };
+        state.grid_curr = { ...state.grid_next, pos_x: state.grid_next.pos_x ? [...state.grid_next.pos_x]:undefined, pos_y: state.grid_next.pos_y ? [...state.grid_next.pos_y]:undefined };
+        state.next_pieces_curr = { ...state.next_pieces_next, pos_x: state.next_pieces_next.pos_x ? [...state.next_pieces_next.pos_x]:undefined, pos_y: state.next_pieces_next.pos_y ? [...state.next_pieces_next.pos_y]:undefined };
+        state.score_curr = { ...state.score_next, pos_x: state.score_next.pos_x ? [...state.score_next.pos_x]:undefined, pos_y: state.score_next.pos_y ? [...state.score_next.pos_y]:undefined };
+        state.game_state_curr = { ...state.game_state_next, pos_x: state.game_state_next.pos_x ? [...state.game_state_next.pos_x]:undefined, pos_y: state.game_state_next.pos_y ? [...state.game_state_next.pos_y]:undefined };
+    }
+
+    function Setup() {
+        Wrapper_InitActivePiece();
+        Wrapper_InitGrid();
+        Wrapper_InitNextPieces();
+        Wrapper_InitScore();
+        Wrapper_InitGameState();
+    }
+
+    function Loop() {
+        Wrapper_UpdateGameState();
+        Wrapper_ProcessInput();
+        Wrapper_UpdateDropTimer();
+        Wrapper_MoveActivePiece();
+        Wrapper_RotateActivePiece();
+        Wrapper_CheckCollision();
+        Wrapper_LockPiece();
+        Wrapper_ClearLines();
+        Wrapper_SpawnNewPiece();
+        Wrapper_UpdateScore();
+        Wrapper_CheckGameOver();
+        SwapBuffers();
+    }
+
+    // --- p5.js Lifecycle ---
+    function setup() {
+        createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
+        const project_name = 'Quadtris';
+        Setup();
+    }
+
+    function draw() {
+        background(15, 23, 42);
+        Loop();
+            text('Generic Visualization for ' + project_name, 20, 40);
+    }
+
+    function resetGame() {
+        if(document.getElementById('game-over')) document.getElementById('game-over').style.display = 'none';
+        Setup();
+    }
+    </script>
+</body>
+</html>

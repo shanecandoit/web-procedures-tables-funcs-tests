@@ -1,16 +1,18 @@
 // Generated Code for Project: Pong
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
 // --- Configuration Constants ---
-#define SCREEN_WIDTH 800.0
-#define SCREEN_HEIGHT 600.0
-#define PADDLE_WIDTH 15.0
-#define PADDLE_HEIGHT 80.0
-#define PADDLE_SPEED 5.0
-#define BALL_RADIUS 8.0
-#define BALL_START_SPEED_X 4.0
-#define BALL_START_SPEED_Y 3.0
+#define SCREEN_WIDTH 800.0f
+#define SCREEN_HEIGHT 600.0f
+#define PADDLE_WIDTH 15.0f
+#define PADDLE_HEIGHT 80.0f
+#define PADDLE_SPEED 5.0f
+#define BALL_RADIUS 8.0f
+#define BALL_START_SPEED_X 4.0f
+#define BALL_START_SPEED_Y 3.0f
 
 // --- Table Structures ---
 typedef struct {
@@ -52,7 +54,7 @@ struct GameState {
     ScoreTable score_next;
 } state;
 
-// --- Pure Logic Prototypes (User Implemented) ---
+// --- Pure Logic Prototypes ---
 void Logic_InitPaddles(Paddle1Table* paddle1_out, Paddle2Table* paddle2_out);
 BallTable Logic_InitBall();
 ScoreTable Logic_InitScore();
@@ -63,7 +65,7 @@ ScoreTable Logic_CheckScore(BallTable ball_in, ScoreTable score_in);
 void Logic_GameLost(ScoreTable score_in);
 void Logic_GameWon(ScoreTable score_in);
 
-// --- Generated Wrappers (The Wiring) ---
+// --- Generated Wrappers ---
 void Wrapper_InitPaddles() {
     Logic_InitPaddles(&state.paddle1_next, &state.paddle2_next);
     state.paddle1_curr = state.paddle1_next;
@@ -129,7 +131,6 @@ void Loop() {
     Swap_Buffers();
 }
 
-// --- Main Entry Point ---
 int main() {
     Setup();
     while (true) {

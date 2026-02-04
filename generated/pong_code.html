@@ -9,9 +9,12 @@
         body { margin: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background: #0f172a; overflow: hidden; color: #f8fafc; font-family: 'Inter', system-ui, sans-serif; }
         canvas { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 4px solid #334155; border-radius: 12px; }
         #ui { margin-bottom: 2rem; text-align: center; }
-        h1 { margin: 0; font-size: 3rem; font-weight: 800; letter-spacing: -0.025em; color: #38bdf8; }
+        h1 { margin: 0; font-size: 3rem; font-weight: 800; letter-spacing: -0.025em; }
         p { color: #94a3b8; margin-top: 0.5rem; }
-        .controls { position: absolute; bottom: 20px; color: #64748b; font-size: 0.875rem; }
+        .game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.9); padding: 2rem; border-radius: 12px; border: 2px solid #ef4444; text-align: center; display: none; z-index: 100; }
+        .game-over h2 { color: #ef4444; margin: 0 0 1rem; }
+        .game-over button { background: #10b981; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        h1 { color: #38bdf8; }
     </style>
 </head>
 <body>
@@ -19,7 +22,6 @@
         <h1>Pong</h1>
         <p>Player (WS Keys) vs CPU</p>
     </div>
-    <div class="controls">Use W and S to move your paddle</div>
     <script>
 
     // --- Configuration ---
@@ -45,112 +47,61 @@
     };
 
     // --- Pure Logic Functions ---
+
     function Logic_InitPaddles() {
-        const p1 = {
-            x: 40,
-            y: (SCREEN_HEIGHT / 2) - (PADDLE_HEIGHT / 2),
-            width: PADDLE_WIDTH,
-            height: PADDLE_HEIGHT
-        };
-        const p2 = {
-            x: SCREEN_WIDTH - 40 - PADDLE_WIDTH,
-            y: (SCREEN_HEIGHT / 2) - (PADDLE_HEIGHT / 2),
-            width: PADDLE_WIDTH,
-            height: PADDLE_HEIGHT
-        };
+        const p1 = { x: 40, y: (SCREEN_HEIGHT / 2) - (PADDLE_HEIGHT / 2), width: PADDLE_WIDTH, height: PADDLE_HEIGHT };
+        const p2 = { x: SCREEN_WIDTH - 40 - PADDLE_WIDTH, y: (SCREEN_HEIGHT / 2) - (PADDLE_HEIGHT / 2), width: PADDLE_WIDTH, height: PADDLE_HEIGHT };
         return { paddle1: p1, paddle2: p2 };
     }
-
     function Logic_InitBall() {
-        return {
-            x: SCREEN_WIDTH / 2,
-            y: SCREEN_HEIGHT / 2,
-            radius: BALL_RADIUS,
-            speedX: BALL_START_SPEED_X,
-            speedY: BALL_START_SPEED_Y
-        };
+        return { x: SCREEN_WIDTH / 2, y: SCREEN_HEIGHT / 2, radius: BALL_RADIUS, speedX: BALL_START_SPEED_X, speedY: BALL_START_SPEED_Y };
     }
-
-    function Logic_InitScore() {
-        return { p1: 0, p2: 0 };
-    }
-
+    function Logic_InitScore() { return { p1: 0, p2: 0 }; }
     function Logic_MovePaddle1(p) {
         let p_out = { ...p };
-        // Player Control
-        if (keyIsDown(87) || keyIsDown(UP_ARROW)) { // W or Up
-            p_out.y -= PADDLE_SPEED;
-        }
-        if (keyIsDown(83) || keyIsDown(DOWN_ARROW)) { // S or Down
-            p_out.y += PADDLE_SPEED;
-        }
+        if (keyIsDown(87) || keyIsDown(UP_ARROW)) p_out.y -= PADDLE_SPEED;
+        if (keyIsDown(83) || keyIsDown(DOWN_ARROW)) p_out.y += PADDLE_SPEED;
         p_out.y = Math.max(0, Math.min(SCREEN_HEIGHT - p_out.height, p_out.y));
         return p_out;
     }
-
     function Logic_MovePaddle2(p, b) {
         let p_out = { ...p };
-        // Improved AI: follow the ball with a deadzone to prevent glitchy jitter
         const paddleCenter = p_out.y + p_out.height / 2;
         const deadzone = 10;
-        
-        if (b.y > paddleCenter + deadzone) {
-            p_out.y += PADDLE_SPEED * 0.85; // Slightly slower than player
-        } else if (b.y < paddleCenter - deadzone) {
-            p_out.y -= PADDLE_SPEED * 0.85;
-        }
+        if (b.y > paddleCenter + deadzone) p_out.y += PADDLE_SPEED * 0.85;
+        else if (b.y < paddleCenter - deadzone) p_out.y -= PADDLE_SPEED * 0.85;
         p_out.y = Math.max(0, Math.min(SCREEN_HEIGHT - p_out.height, p_out.y));
         return p_out;
     }
-
     function Logic_MoveBall(b, p1, p2) {
         let b_out = { ...b };
         b_out.x += b_out.speedX;
         b_out.y += b_out.speedY;
-
-        // Top/Bottom walls
         if (b_out.y - b_out.radius <= 0 || b_out.y + b_out.radius >= SCREEN_HEIGHT) {
             b_out.speedY *= -1;
             b_out.y = b_out.y <= 0 ? b_out.radius : SCREEN_HEIGHT - b_out.radius;
         }
-
-        // Paddle 1 Collision (Left)
         if (b_out.speedX < 0) {
             let hitX = (b_out.x - b_out.radius <= p1.x + p1.width) && (b_out.x + b_out.radius >= p1.x);
             let hitY = (b_out.y >= p1.y) && (b_out.y <= p1.y + p1.height);
-            if (hitX && hitY) {
-                b_out.speedX *= -1.05;
-                b_out.x = p1.x + p1.width + b_out.radius;
-            }
+            if (hitX && hitY) { b_out.speedX *= -1.05; b_out.x = p1.x + p1.width + b_out.radius; }
         }
-
-        // Paddle 2 Collision (Right)
         if (b_out.speedX > 0) {
             let hitX = (b_out.x + b_out.radius >= p2.x) && (b_out.x - b_out.radius <= p2.x + p2.width);
             let hitY = (b_out.y >= p2.y) && (b_out.y <= p2.y + p2.height);
-            if (hitX && hitY) {
-                b_out.speedX *= -1.05;
-                b_out.x = p2.x - b_out.radius;
-            }
+            if (hitX && hitY) { b_out.speedX *= -1.05; b_out.x = p2.x - b_out.radius; }
         }
-
-        // Reset and Score points
-        if (b_out.x < 0 || b_out.x > SCREEN_WIDTH) {
-            return Logic_InitBall(); 
-        }
-
+        if (b_out.x < 0 || b_out.x > SCREEN_WIDTH) return Logic_InitBall(); 
         return b_out;
     }
-
     function Logic_CheckScore(b, s) {
         let s_out = { ...s };
         if (b.x < 0) s_out.p2 += 1;
         if (b.x > SCREEN_WIDTH) s_out.p1 += 1;
         return s_out;
     }
-
-    function Logic_GameLost(s) {}
-    function Logic_GameWon(s) {}
+    function Logic_GameLost() {}
+    function Logic_GameWon() {}
 
     // --- Generated Wrappers ---
     function Wrapper_InitPaddles() {
@@ -197,10 +148,10 @@
 
     // --- Procedures ---
     function SwapBuffers() {
-        state.paddle1_curr = { ...state.paddle1_next };
-        state.paddle2_curr = { ...state.paddle2_next };
-        state.ball_curr = { ...state.ball_next };
-        state.score_curr = { ...state.score_next };
+        state.paddle1_curr = { ...state.paddle1_next, pos_x: state.paddle1_next.pos_x ? [...state.paddle1_next.pos_x]:undefined, pos_y: state.paddle1_next.pos_y ? [...state.paddle1_next.pos_y]:undefined };
+        state.paddle2_curr = { ...state.paddle2_next, pos_x: state.paddle2_next.pos_x ? [...state.paddle2_next.pos_x]:undefined, pos_y: state.paddle2_next.pos_y ? [...state.paddle2_next.pos_y]:undefined };
+        state.ball_curr = { ...state.ball_next, pos_x: state.ball_next.pos_x ? [...state.ball_next.pos_x]:undefined, pos_y: state.ball_next.pos_y ? [...state.ball_next.pos_y]:undefined };
+        state.score_curr = { ...state.score_next, pos_x: state.score_next.pos_x ? [...state.score_next.pos_x]:undefined, pos_y: state.score_next.pos_y ? [...state.score_next.pos_y]:undefined };
     }
 
     function Setup() {
@@ -221,7 +172,8 @@
 
     // --- p5.js Lifecycle ---
     function setup() {
-        createCanvas(800.0, 600.0);
+        createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
+        const project_name = 'Pong';
         Setup();
     }
 
@@ -229,37 +181,33 @@
         background(15, 23, 42);
         Loop();
         
-        // --- Draw logic ---
+        // Draw logic
         stroke(51, 65, 85);
         strokeWeight(4);
         for(let i=0; i<height; i+=40) line(width/2, i+10, width/2, i+30);
-
         noStroke();
         drawingContext.shadowBlur = 15;
         drawingContext.shadowColor = '#38bdf8';
-        
         fill(255);
-        // Player
         rect(state.paddle1_curr.x, state.paddle1_curr.y, state.paddle1_curr.width, state.paddle1_curr.height, 4);
-        
         drawingContext.shadowColor = '#fbbf24';
         fill('#fbbf24');
-        // CPU
         rect(state.paddle2_curr.x, state.paddle2_curr.y, state.paddle2_curr.width, state.paddle2_curr.height, 4);
-        
         drawingContext.shadowBlur = 20;
         drawingContext.shadowColor = '#ec4899';
         fill('#ec4899');
         circle(state.ball_curr.x, state.ball_curr.y, state.ball_curr.radius * 2);
-
         drawingContext.shadowBlur = 0;
         fill('#f8fafc');
-        textSize(48);
-        textAlign(CENTER);
-        textFont('Inter');
-        textStyle(BOLD);
+        textSize(48); textAlign(CENTER); textFont('Inter'); textStyle(BOLD);
         text(state.score_curr.p1, width/4, 80);
         text(state.score_curr.p2, 3 * width/4, 80);
+
+    }
+
+    function resetGame() {
+        if(document.getElementById('game-over')) document.getElementById('game-over').style.display = 'none';
+        Setup();
     }
     </script>
 </body>

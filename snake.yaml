@@ -67,16 +67,16 @@ functions:
     outputs: [snake_head]
     body: "reads keyboard input and updates direction (prevents 180-degree turns)"
   MoveSnakeHead:
-    inputs: [snake_head]
+    inputs: [snake_head, timer]
     outputs: [snake_head]
     body: "updates position based on direction and speed"
   MoveSnakeBody:
-    inputs: [snake_head, snake_body]
+    inputs: [snake_head, snake_body, timer]
     outputs: [snake_body]
     body: "each segment moves to the position of the segment in front of it"
   CheckSnackCollision:
-    inputs: [snake_head, snacks, snake_body]
-    outputs: [snacks, snake_body]
+    inputs: [snake_head, snake_body, snacks]
+    outputs: [snake_body, snacks]
     body: "detects if head collides with snack, grows snake"
   CheckWallCollision:
     inputs: [snake_head, timer]

@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <style>
+        body { margin: 0; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100vh; background: #0f172a; overflow: hidden; color: #f8fafc; font-family: 'Inter', system-ui, sans-serif; }
+        canvas { box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5); border: 4px solid #334155; border-radius: 12px; }
+        #ui { margin-bottom: 2rem; text-align: center; }
+        h1 { margin: 0; font-size: 3rem; font-weight: 800; letter-spacing: -0.025em; }
+        p { color: #94a3b8; margin-top: 0.5rem; }
+        .game-over { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(15, 23, 42, 0.9); padding: 2rem; border-radius: 12px; border: 2px solid #ef4444; text-align: center; display: none; z-index: 100; }
+        .game-over h2 { color: #ef4444; margin: 0 0 1rem; }
+        .game-over button { background: #10b981; color: white; border: none; padding: 0.5rem 1rem; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        h1 { color: #10b981; }
+    </style>
+</head>
+<body>
+    <div id="ui">
+        <h1>Snake</h1>
+        <p>Use Arrow Keys to Navigate</p><div id='game-over' class='game-over'><h2>GAME OVER</h2><p id='final-score'>Score: 0</p><button onclick='resetGame()'>Try Again</button></div>
+    </div>
+    <script>
+
+    // --- Configuration ---
+    const SCREEN_WIDTH = 800.0;
+    const SCREEN_HEIGHT = 600.0;
+    const SNAKE_SIZE = 20.0;
+    const SNAKE_SPEED = 5.0;
+    const SNACK_RADIUS = 10.0;
+    const INITIAL_BODY_LENGTH = 3;
+    const GRID_SIZE = 20.0;
+
+    // --- Global State ---
+    let state = {
+        snake_head_curr: {},
+        snake_head_next: {},
+        snake_body_curr: {},
+        snake_body_next: {},
+        snacks_curr: {},
+        snacks_next: {},
+        score_curr: {},
+        score_next: {},
+        timer_curr: {},
+        timer_next: {},
+    };
+
+    // --- Pure Logic Functions ---
+
+    function Logic_InitSnakeHead() {
+        return { x: Math.floor(SCREEN_WIDTH / (2 * GRID_SIZE)) * GRID_SIZE, y: Math.floor(SCREEN_HEIGHT / (2 * GRID_SIZE)) * GRID_SIZE, directionX: 1, directionY: 0, size: GRID_SIZE };
+    }
+    function Logic_InitSnakeBody() {
+        const headX = Math.floor(SCREEN_WIDTH / (2 * GRID_SIZE)) * GRID_SIZE;
+        const headY = Math.floor(SCREEN_HEIGHT / (2 * GRID_SIZE)) * GRID_SIZE;
+        return { pos_x: [headX - GRID_SIZE, headX - 2 * GRID_SIZE, headX - 3 * GRID_SIZE], pos_y: [headY, headY, headY], length: 3 };
+    }
+    function Logic_InitSnacks() {
+        return { x: Math.floor(Math.random() * (SCREEN_WIDTH / GRID_SIZE)) * GRID_SIZE, y: Math.floor(Math.random() * (SCREEN_HEIGHT / GRID_SIZE)) * GRID_SIZE, radius: GRID_SIZE / 2, active: 1 };
+    }
+    function Logic_InitScore() { return { points: 0, highScore: 0 }; }
+    function Logic_InitTimer() { return { elapsed: 0, gameState: 0 }; }
+    function Logic_UpdateTimer(t) {
+        let t_out = { ...t };
+        if (t_out.gameState === 0) t_out.elapsed += 1;
+        return t_out;
+    }
+    function Logic_ProcessInput(h) {
+        let h_out = { ...h };
+        if (keyIsDown(LEFT_ARROW) && h.directionX !== 1) { h_out.directionX = -1; h_out.directionY = 0; }
+        else if (keyIsDown(RIGHT_ARROW) && h.directionX !== -1) { h_out.directionX = 1; h_out.directionY = 0; }
+        else if (keyIsDown(UP_ARROW) && h.directionY !== 1) { h_out.directionX = 0; h_out.directionY = -1; }
+        else if (keyIsDown(DOWN_ARROW) && h.directionY !== -1) { h_out.directionX = 0; h_out.directionY = 1; }
+        return h_out;
+    }
+    function Logic_MoveSnakeHead(h, t) {
+        if (t.gameState !== 0) return h;
+        if (frameCount % 6 !== 0) return h;
+        let h_out = { ...h };
+        h_out.x += h.directionX * GRID_SIZE;
+        h_out.y += h.directionY * GRID_SIZE;
+        return h_out;
+    }
+    function Logic_MoveSnakeBody(h, b, t) {
+        if (t.gameState !== 0) return b;
+        if (frameCount % 6 !== 0) return b;
+        let b_out = { ...b, pos_x: [...b.pos_x], pos_y: [...b.pos_y] };
+        for (let i = b_out.length - 1; i > 0; i--) { b_out.pos_x[i] = b_out.pos_x[i-1]; b_out.pos_y[i] = b_out.pos_y[i-1]; }
+        b_out.pos_x[0] = h.x; b_out.pos_y[0] = h.y;
+        return b_out;
+    }
+    function Logic_CheckSnackCollision(h, b, s) {
+        let b_out = { ...b, pos_x: [...b.pos_x], pos_y: [...b.pos_y] };
+        let s_out = { ...s };
+        if (h.x === s.x && h.y === s.y) {
+            b_out.length += 1;
+            b_out.pos_x.push(b.pos_x[b.length-1]);
+            b_out.pos_y.push(b.pos_y[b.length-1]);
+            s_out.active = 0;
+        }
+        return { snake_body: b_out, snacks: s_out };
+    }
+    function Logic_CheckWallCollision(h, t) {
+        let t_out = { ...t };
+        if (h.x < 0 || h.x >= SCREEN_WIDTH || h.y < 0 || h.y >= SCREEN_HEIGHT) { t_out.gameState = 2; }
+        return t_out;
+    }
+    function Logic_CheckSelfCollision(h, b, t) {
+        let t_out = { ...t };
+        for (let i = 0; i < b.length; i++) { if (h.x === b.pos_x[i] && h.y === b.pos_y[i]) t_out.gameState = 2; }
+        return t_out;
+    }
+    function Logic_UpdateScore(sc, sn) {
+        let sc_out = { ...sc };
+        if (sn.active === 0) { sc_out.points += 10; if (sc_out.points > sc_out.highScore) sc_out.highScore = sc_out.points; }
+        return sc_out;
+    }
+    function Logic_SpawnSnack(s, b) {
+        if (s.active === 1) return s;
+        let s_out = { ...s, active: 1 };
+        let valid = false;
+        while (!valid) {
+            s_out.x = Math.floor(Math.random() * (SCREEN_WIDTH / GRID_SIZE)) * GRID_SIZE;
+            s_out.y = Math.floor(Math.random() * (SCREEN_HEIGHT / GRID_SIZE)) * GRID_SIZE;
+            valid = true;
+            for (let i = 0; i < b.length; i++) { if (s_out.x === b.pos_x[i] && s_out.y === b.pos_y[i]) { valid = false; break; } }
+        }
+        return s_out;
+    }
+
+    // --- Generated Wrappers ---
+    function Wrapper_InitSnakeHead() {
+        state.snake_head_next = Logic_InitSnakeHead();
+        state.snake_head_curr = state.snake_head_next;
+    }
+
+    function Wrapper_InitSnakeBody() {
+        state.snake_body_next = Logic_InitSnakeBody();
+        state.snake_body_curr = state.snake_body_next;
+    }
+
+    function Wrapper_InitSnacks() {
+        state.snacks_next = Logic_InitSnacks();
+        state.snacks_curr = state.snacks_next;
+    }
+
+    function Wrapper_InitScore() {
+        state.score_next = Logic_InitScore();
+        state.score_curr = state.score_next;
+    }
+
+    function Wrapper_InitTimer() {
+        state.timer_next = Logic_InitTimer();
+        state.timer_curr = state.timer_next;
+    }
+
+    function Wrapper_UpdateTimer() {
+        state.timer_next = Logic_UpdateTimer(state.timer_curr);
+    }
+
+    function Wrapper_ProcessInput() {
+        state.snake_head_next = Logic_ProcessInput(state.snake_head_curr);
+    }
+
+    function Wrapper_MoveSnakeHead() {
+        state.snake_head_next = Logic_MoveSnakeHead(state.snake_head_curr, state.timer_curr);
+    }
+
+    function Wrapper_MoveSnakeBody() {
+        state.snake_body_next = Logic_MoveSnakeBody(state.snake_head_curr, state.snake_body_curr, state.timer_curr);
+    }
+
+    function Wrapper_CheckSnackCollision() {
+        const results = Logic_CheckSnackCollision(state.snake_head_curr, state.snake_body_curr, state.snacks_curr);
+        state.snake_body_next = results.snake_body;
+        state.snacks_next = results.snacks;
+    }
+
+    function Wrapper_CheckWallCollision() {
+        state.timer_next = Logic_CheckWallCollision(state.snake_head_curr, state.timer_curr);
+    }
+
+    function Wrapper_CheckSelfCollision() {
+        state.timer_next = Logic_CheckSelfCollision(state.snake_head_curr, state.snake_body_curr, state.timer_curr);
+    }
+
+    function Wrapper_UpdateScore() {
+        state.score_next = Logic_UpdateScore(state.score_curr, state.snacks_curr);
+    }
+
+    function Wrapper_SpawnSnack() {
+        state.snacks_next = Logic_SpawnSnack(state.snacks_curr, state.snake_body_curr);
+    }
+
+    // --- Procedures ---
+    function SwapBuffers() {
+        state.snake_head_curr = { ...state.snake_head_next, pos_x: state.snake_head_next.pos_x ? [...state.snake_head_next.pos_x]:undefined, pos_y: state.snake_head_next.pos_y ? [...state.snake_head_next.pos_y]:undefined };
+        state.snake_body_curr = { ...state.snake_body_next, pos_x: state.snake_body_next.pos_x ? [...state.snake_body_next.pos_x]:undefined, pos_y: state.snake_body_next.pos_y ? [...state.snake_body_next.pos_y]:undefined };
+        state.snacks_curr = { ...state.snacks_next, pos_x: state.snacks_next.pos_x ? [...state.snacks_next.pos_x]:undefined, pos_y: state.snacks_next.pos_y ? [...state.snacks_next.pos_y]:undefined };
+        state.score_curr = { ...state.score_next, pos_x: state.score_next.pos_x ? [...state.score_next.pos_x]:undefined, pos_y: state.score_next.pos_y ? [...state.score_next.pos_y]:undefined };
+        state.timer_curr = { ...state.timer_next, pos_x: state.timer_next.pos_x ? [...state.timer_next.pos_x]:undefined, pos_y: state.timer_next.pos_y ? [...state.timer_next.pos_y]:undefined };
+    }
+
+    function Setup() {
+        Wrapper_InitSnakeHead();
+        Wrapper_InitSnakeBody();
+        Wrapper_InitSnacks();
+        Wrapper_InitScore();
+        Wrapper_InitTimer();
+    }
+
+    function Loop() {
+        Wrapper_UpdateTimer();
+        Wrapper_ProcessInput();
+        Wrapper_MoveSnakeHead();
+        Wrapper_MoveSnakeBody();
+        Wrapper_CheckSnackCollision();
+        Wrapper_CheckWallCollision();
+        Wrapper_CheckSelfCollision();
+        Wrapper_UpdateScore();
+        Wrapper_SpawnSnack();
+        SwapBuffers();
+    }
+
+    // --- p5.js Lifecycle ---
+    function setup() {
+        createCanvas(SCREEN_WIDTH, SCREEN_HEIGHT);
+        const project_name = 'Snake';
+        Setup();
+    }
+
+    function draw() {
+        background(15, 23, 42);
+        Loop();
+        
+        if (state.timer_curr.gameState === 2) {
+            document.getElementById('game-over').style.display = 'block';
+            document.getElementById('final-score').textContent = 'Score: ' + state.score_curr.points;
+            return;
+        }
+        stroke(31, 41, 55);
+        for(let x=0; x<width; x+=GRID_SIZE) line(x, 0, x, height);
+        for(let y=0; y<height; y+=GRID_SIZE) line(0, y, width, y);
+        noStroke();
+        drawingContext.shadowBlur = 15;
+        drawingContext.shadowColor = '#f43f5e';
+        fill('#f43f5e');
+        rect(state.snacks_curr.x + 2, state.snacks_curr.y + 2, GRID_SIZE - 4, GRID_SIZE - 4, 4);
+        drawingContext.shadowColor = '#10b981';
+        fill('#10b981');
+        for (let i = 0; i < state.snake_body_curr.length; i++) {
+            rect(state.snake_body_curr.pos_x[i] + 1, state.snake_body_curr.pos_y[i] + 1, GRID_SIZE - 2, GRID_SIZE - 2, 4);
+        }
+        drawingContext.shadowBlur = 20;
+        drawingContext.shadowColor = '#34d399';
+        fill('#34d399');
+        rect(state.snake_head_curr.x, state.snake_head_curr.y, GRID_SIZE, GRID_SIZE, 4);
+        drawingContext.shadowBlur = 0;
+        fill('#f8fafc');
+        textSize(24); textAlign(LEFT); textFont('Inter');
+        text('Score: ' + state.score_curr.points, 20, 40);
+        textAlign(RIGHT); text('High Score: ' + state.score_curr.highScore, width - 20, 40);
+
+    }
+
+    function resetGame() {
+        if(document.getElementById('game-over')) document.getElementById('game-over').style.display = 'none';
+        Setup();
+    }
+    </script>
+</body>
+</html>
