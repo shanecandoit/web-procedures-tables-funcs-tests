@@ -3,10 +3,10 @@
 
 Games which are Projects:
 
-1. [Pong](pong.md) - See detailed implementation
-2. [Snake](snake.md) - See detailed implementation
-3. Quadtris
-4. Breakout
+1. [Pong](pong.md)
+2. [Snake](snake.md)
+3. [Quadtris](quadtris.md)
+4. [Breakout](breakout.md)
 
 Simulations are a series of Procedures that produce immutable Tables using Functions.
 

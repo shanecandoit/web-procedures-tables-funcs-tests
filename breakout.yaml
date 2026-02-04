@@ -1,0 +1,131 @@
+project_name: Breakout
+
+config:
+  screen_width: 800.0
+  screen_height: 600.0
+  paddle_width: 100.0
+  paddle_height: 15.0
+  paddle_speed: 6.0
+  ball_radius: 8.0
+  ball_speed: 5.0
+  brick_rows: 8
+  brick_cols: 10
+  brick_width: 75.0
+  brick_height: 20.0
+  initial_lives: 3
+
+tables:
+  paddle:
+    columns:
+      x: float
+      y: float
+      width: float
+      height: float
+      speed: float
+  ball:
+    columns:
+      x: float
+      y: float
+      radius: float
+      speedX: float
+      speedY: float
+      active: int
+  bricks:
+    columns:
+      grid: array
+      rows: int
+      cols: int
+      brick_width: float
+      brick_height: float
+      remaining: int
+  score:
+    columns:
+      points: int
+      lives: int
+      level: int
+      highScore: int
+  game_state:
+    columns:
+      state: int
+      elapsed: float
+
+functions:
+  InitPaddle:
+    inputs: []
+    outputs: [paddle]
+    body: "sets paddle at horizontal center near bottom, with default width and speed"
+  InitBall:
+    inputs: []
+    outputs: [ball]
+    body: "creates ball at paddle position, inactive (attached to paddle)"
+  InitBricks:
+    inputs: []
+    outputs: [bricks]
+    body: "generates level layout with brick pattern and counts"
+  InitScore:
+    inputs: []
+    outputs: [score]
+    body: "sets points to 0, lives to 3, level to 1, loads high score"
+  InitGameState:
+    inputs: []
+    outputs: [game_state]
+    body: "sets state to 0 (menu), elapsed to 0.0"
+  UpdateGameState:
+    inputs: [game_state]
+    outputs: [game_state]
+    body: "increments elapsed time, handles state-specific logic"
+  ProcessInput:
+    inputs: [paddle, ball]
+    outputs: [paddle, ball]
+    body: "reads keyboard/mouse input for paddle movement and spacebar to launch ball"
+  MovePaddle:
+    inputs: [paddle]
+    outputs: [paddle]
+    body: "updates x position based on speed, clamps to screen boundaries"
+  MoveBall:
+    inputs: [ball]
+    outputs: [ball]
+    body: "applies velocity to position if ball is active"
+  CheckPaddleCollision:
+    inputs: [ball, paddle]
+    outputs: [ball]
+    body: "uses AABB collision detection; reflects ball and applies angle based on hit location"
+  CheckWallCollision:
+    inputs: [ball]
+    outputs: [ball]
+    body: "bounces ball off left, right, and top walls"
+  CheckBrickCollision:
+    inputs: [ball, bricks]
+    outputs: [ball, bricks]
+    body: "checks ball against all bricks, handles hits by reflecting ball and updating brick state"
+  CheckBallLost:
+    inputs: [ball, score, game_state]
+    outputs: [ball, score, game_state]
+    body: "if ball y-position exceeds bottom boundary, reduce lives, reset ball, or trigger game over"
+  UpdateScore:
+    inputs: [score, bricks]
+    outputs: [score]
+    body: "awards points based on bricks destroyed and updates high score"
+  CheckWinCondition:
+    inputs: [bricks, game_state]
+    outputs: [game_state]
+    body: "if remaining bricks is 0, set state to level_complete"
+
+procedures:
+  Setup:
+    - InitPaddle
+    - InitBall
+    - InitBricks
+    - InitScore
+    - InitGameState
+  Loop:
+    - UpdateGameState
+    - ProcessInput
+    - MovePaddle
+    - MoveBall
+    - CheckPaddleCollision
+    - CheckWallCollision
+    - CheckBrickCollision
+    - CheckBallLost
+    - UpdateScore
+    - CheckWinCondition

@@ -1,0 +1,133 @@
+project_name: Quadtris
+
+config:
+  screen_width: 400.0
+  screen_height: 800.0
+  grid_width: 10
+  grid_height: 20
+  cell_size: 30.0
+  initial_drop_speed: 1.0
+  lock_delay: 0.5
+  initial_lives: 3
+  lines_per_level: 10
+  preview_count: 3
+
+tables:
+  active_piece:
+    columns:
+      type: int
+      rotation: int
+      x: float
+      y: float
+      grid_x: int
+      grid_y: int
+      locked: int
+  grid:
+    columns:
+      cells: array
+      width: int
+      height: int
+  next_pieces:
+    columns:
+      queue: array
+      count: int
+  score:
+    columns:
+      points: int
+      lines: int
+      level: int
+      highScore: int
+  game_state:
+    columns:
+      state: int
+      dropTimer: float
+      dropSpeed: float
+      lockTimer: float
+      canHold: int
+      heldPiece: int
+
+functions:
+  InitActivePiece:
+    inputs: []
+    outputs: [active_piece]
+    body: "creates first piece of random type at spawn position (x=3, y=0), rotation 0, not locked"
+  InitGrid:
+    inputs: []
+    outputs: [grid]
+    body: "sets all cells to 0 (empty), width to 10, height to 20"
+  InitNextPieces:
+    inputs: []
+    outputs: [next_pieces]
+    body: "generates 3 random piece types using 7-bag randomizer algorithm"
+  InitScore:
+    inputs: []
+    outputs: [score]
+    body: "sets points to 0, lines to 0, level to 1, loads high score"
+  InitGameState:
+    inputs: []
+    outputs: [game_state]
+    body: "sets state to 0 (menu), dropSpeed based on level 1, dropTimer to 0, lockTimer to 0, canHold to 1, heldPiece to -1"
+  UpdateGameState:
+    inputs: [game_state]
+    outputs: [game_state]
+    body: "handles pause/unpause, updates drop speed based on level"
+  ProcessInput:
+    inputs: [active_piece, game_state]
+    outputs: [active_piece, game_state]
+    body: "reads keyboard input for left/right movement, rotation (Z/X or arrows), hold (C or Shift), hard drop (Space)"
+  UpdateDropTimer:
+    inputs: [game_state]
+    outputs: [game_state]
+    body: "increments dropTimer by deltaTime, resets when exceeds dropSpeed"
+  MoveActivePiece:
+    inputs: [active_piece, game_state]
+    outputs: [active_piece, game_state]
+    body: "moves piece down if dropTimer triggered, applies horizontal movement from input, updates grid positions"
+  RotateActivePiece:
+    inputs: [active_piece]
+    outputs: [active_piece]
+    body: "changes rotation state (0-3), applies wall kick offsets if needed (SRS system)"
+  CheckCollision:
+    inputs: [active_piece, grid]
+    outputs: [active_piece]
+    body: "tests if current piece position/rotation overlaps filled cells or boundaries, marks collision flag"
+  LockPiece:
+    inputs: [active_piece, grid, game_state]
+    outputs: [grid, game_state, active_piece]
+    body: "if piece can't move down and lockTimer expires, copy piece blocks to grid cells with piece type"
+  ClearLines:
+    inputs: [grid, score]
+    outputs: [grid, score]
+    body: "scans for complete rows, removes them, shifts upper rows down, counts lines cleared"
+  SpawnNewPiece:
+    inputs: [active_piece, next_pieces, game_state]
+    outputs: [active_piece, next_pieces, game_state]
+    body: "takes first piece from queue, creates new ActivePiece, generates new random piece for end of queue, resets lockTimer and canHold"
+  UpdateScore:
+    inputs: [score, game_state]
+    outputs: [score, game_state]
+    body: "awards points based on lines cleared (1=100, 2=300, 3=500, 4=800), updates level every 10 lines, adjusts drop speed"
+  CheckGameOver:
+    inputs: [grid, active_piece, game_state]
+    outputs: [game_state]
+    body: "if newly spawned piece collides immediately, set state to game_over"
+
+procedures:
+  Setup:
+    - InitActivePiece
+    - InitGrid
+    - InitNextPieces
+    - InitScore
+    - InitGameState
+  Loop:
+    - UpdateGameState
+    - ProcessInput
+    - UpdateDropTimer
+    - MoveActivePiece
+    - RotateActivePiece
+    - CheckCollision
+    - LockPiece
+    - ClearLines
+    - SpawnNewPiece
+    - UpdateScore
+    - CheckGameOver

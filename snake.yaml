@@ -1,0 +1,114 @@
+project_name: Snake
+
+config:
+  screen_width: 800.0
+  screen_height: 600.0
+  snake_size: 20.0
+  snake_speed: 5.0
+  snack_radius: 10.0
+  initial_body_length: 3
+  grid_size: 20.0
+
+tables:
+  snake_head:
+    columns:
+      x: float
+      y: float
+      directionX: float
+      directionY: float
+      size: float
+  snake_body:
+    columns:
+      pos_x: array
+      pos_y: array
+      length: int
+  snacks:
+    columns:
+      x: float
+      y: float
+      radius: float
+      active: int
+  score:
+    columns:
+      points: int
+      highScore: int
+  timer:
+    columns:
+      elapsed: float
+      gameState: int
+
+functions:
+  InitSnakeHead:
+    inputs: []
+    outputs: [snake_head]
+    body: "sets initial position at screen center, direction facing right, default size"
+  InitSnakeBody:
+    inputs: []
+    outputs: [snake_body]
+    body: "initializes with 3 starting segments behind the head"
+  InitSnacks:
+    inputs: []
+    outputs: [snacks]
+    body: "spawns first snack at random position"
+  InitScore:
+    inputs: []
+    outputs: [score]
+    body: "sets points to 0, loads high score from storage"
+  InitTimer:
+    inputs: []
+    outputs: [timer]
+    body: "sets elapsed to 0.0, gameState to 0 (playing)"
+  UpdateTimer:
+    inputs: [timer]
+    outputs: [timer]
+    body: "increments elapsed time, maintains game state"
+  ProcessInput:
+    inputs: [snake_head]
+    outputs: [snake_head]
+    body: "reads keyboard input and updates direction (prevents 180-degree turns)"
+  MoveSnakeHead:
+    inputs: [snake_head]
+    outputs: [snake_head]
+    body: "updates position based on direction and speed"
+  MoveSnakeBody:
+    inputs: [snake_head, snake_body]
+    outputs: [snake_body]
+    body: "each segment moves to the position of the segment in front of it"
+  CheckSnackCollision:
+    inputs: [snake_head, snacks, snake_body]
+    outputs: [snacks, snake_body]
+    body: "detects if head collides with snack, grows snake"
+  CheckWallCollision:
+    inputs: [snake_head, timer]
+    outputs: [timer]
+    body: "checks if snake hit wall, ends game"
+  CheckSelfCollision:
+    inputs: [snake_head, snake_body, timer]
+    outputs: [timer]
+    body: "checks if snake hit itself, ends game"
+  UpdateScore:
+    inputs: [score, snacks]
+    outputs: [score]
+    body: "awards points when snack is eaten"
+  SpawnSnack:
+    inputs: [snacks, snake_body]
+    outputs: [snacks]
+    body: "generates new snack at valid location"
+
+procedures:
+  Setup:
+    - InitSnakeHead
+    - InitSnakeBody
+    - InitSnacks
+    - InitScore
+    - InitTimer
+  Loop:
+    - UpdateTimer
+    - ProcessInput
+    - MoveSnakeHead
+    - MoveSnakeBody
+    - CheckSnackCollision
+    - CheckWallCollision
+    - CheckSelfCollision
+    - UpdateScore
+    - SpawnSnack
