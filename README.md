@@ -1,45 +1,65 @@
+# LogicCanvas: Visual Game Design with Procedures, Tables, and Functions
 
-# Procedures from Tables, Funcs, and Tests
+LogicCanvas is an experimental framework for designing and generating games using a declarative, data-driven architecture. It brings together visual programming concepts from Scratch, the functional purity of The Elm Architecture, and the modularity of Entity-Component-System (ECS) patterns.
 
-Games which are Projects:
+## What is LogicCanvas?
 
-1. [Pong](pong.md)
-2. [Snake](snake.md)
-3. [Quadtris](quadtris.md)
-4. [Breakout](breakout.md)
+LogicCanvas transforms game design from imperative code into a structured flow of Procedures, Tables (data), and Functions (pure logic). Instead of writing traditional game loops, you define:
+
+- Tables: Immutable data structures (like `Paddle`, `Ball`, `Score`)
+- Functions: Pure transformations that take input tables and produce output tables
+- Procedures: Sequences of function calls that model game logic
+
+The system automatically generates both:
+- C code for native execution
+- p5.js web simulations for instant browser-based testing
+
+## Current Projects
+
+Working examples demonstrating the architecture:
+
+1. [Pong](pong.md) - Classic paddle game
+2. [Snake](snake.md) - Collectible-based movement
+3. [Quadtris](quadtris.md) - Block-based puzzle
+4. [Breakout](breakout.md) - Brick-breaking arcade game
+
+## Core Concepts
 
 Simulations are a series of Procedures that produce immutable Tables using Functions.
 
-Each project has a yaml file in the `projects/` folder.
+Every game project is defined by:
+- A YAML file describing tables, functions, and procedures
+- A Markdown file documenting the game design
+- Automatic code generation for both C and p5.js
 
-Each project has a list of Procedures in its yaml file.
-Each project has an Setup and Loop event.
+Each project has Setup and Loop events, mirroring the classic game loop:
 
-Each Proecedure has
-
-- a name
-- a list of tables it uses
-- a list of functions it uses, called in sequence
+Each Procedure has:
+- A name
+- A list of tables it uses
+- A list of functions it calls in sequence
 
 A Table has:
-
-- a name
-- a list of columns
-- each column has a name and a type
+- A name
+- A list of columns
+- Each column has a name and a type (int, float, bool, etc.)
 
 A Function has:
+- A name
+- One or more input tables
+- One or more output tables
+- An optional list of parameters
+- A body of code that uses the input tables and parameters to produce output tables
+- Support for loops and conditionals
+- Ability to call other functions
 
-- a name
-- one or more input tables
-- one or more output tables
-- an optional list of parameters
-- a body of code that uses the input tables, parameters, and produces the output tables
-- functions have for each loops and if statements
-- functions can call other functions, but dont have to
+### Double-Buffering State Management
 
----
+Functions are pure and have no side effects. They return new tables based on input tables.
 
-Imagine the runtime has an Arduino style main loop:
+The generated code uses double buffering: each table has a current and next state. Functions read from current tables and write to next tables, then the system swaps them. This ensures immutability and predictable execution order.
+
+Example runtime structure (Arduino-style main loop):
 
 ```c
 int main() {
@@ -50,43 +70,83 @@ int main() {
 }
 ```
 
+## What Can It Become?
+
+LogicCanvas aims to evolve into a visual game design environment where:
+
+- Non-programmers can design game logic through node-based interfaces
+- Developers can prototype rapidly with automatic code generation
+- Educators can teach programming concepts through visual data flow
+- AI systems can reason about and generate game mechanics declaratively
+
+Potential future capabilities include:
+- Multi-language generation (Rust, WebAssembly, TypeScript)
+- Real-time visual debugging with state inspection
+- Multiplayer networking generation from single-player definitions
+- Asset pipeline integration for sprites, sounds, and animations
+- Cross-platform deployment (web, desktop, mobile, embedded)
+- AI-assisted game design and balancing
+
+See [Improvements.md](Improvements.md) for the full roadmap of 50+ planned features.
+
 ---
 
-Inspiration: The Elm Architecture, ECS, and Scratch Programming Language.
+## Philosophy: Visual & Modular Programming
+
+Inspired by The Elm Architecture, ECS, and Scratch Programming Language.
 How can we make programming more visual and modular?
 
-Functions are pure and have no side effects.
-They return new Tables based on input Tables.
+Functions are pure and have no side effects. They return new tables based on input tables.
 
-Imagine that we reassign the output Tables to the input Tables after each function call.
-Double buffer style. We have to thread them through the functions somehow.
-Maybe just as globals, lol? Maybe a single state struct that holds all the tables?
+The generated code uses double buffering: each table has a current and next state. Functions read from current tables and write to next tables, then the system swaps them. This ensures immutability and predictable execution order.
+
+Example generated structure:
 
 ```c
-void Setup();
-void Loop();
-struct Paddle { float x; float y; float width; float height; };
-struct Ball { float x; float y; float radius; float speedX; float speedY; };
-struct Score { int player1; int player2; };
-Paddle paddle, paddle_next;
+// Table definitions with double-buffering
+struct Paddle { float x, y, width, height; };
+struct Ball { float x, y, radius, speedX, speedY; };
+struct Score { int player1, player2; };
+
+Paddle paddle, paddle_next;    // Current and next state
 Ball ball, ball_next;
 Score score, score_next;
+
+// Main game loop
 int main() {
   Setup();
   while (true) {
     Loop();
   }
 }
+
 void Setup() {
-  InitPaddle();
+  InitPaddle();   // Each procedure calls functions
   InitBall();
   InitScore();
 }
+
 void Loop() {
-  MovePaddle();
+  MovePaddle();   // Functions read current, write next
   MoveBall();
   CheckScore();
-  GameLost();
-  GameWon();
+  // After Loop completes, buffers swap automatically
 }
 ```
+
+## Getting Started
+
+### Build & Run
+
+```bash
+go build
+./webapp.exe  # or ./webapp on Linux/Mac
+```
+
+Then select a project from the dropdown and click "Run Project" to see it in action.
+
+See [USAGE.md](USAGE.md) for detailed documentation on using the interface and creating new projects.
+
+---
+
+Start exploring with the existing games, then try designing your own using the visual canvas and YAML definitions!
